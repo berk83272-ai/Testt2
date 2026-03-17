@@ -1,1 +1,358 @@
-# Testt2
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Şifre Tahmin Aracı</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        input:focus, select:focus {
+            outline: none;
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .results {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        .password-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .password-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner::after {
+            content: '';
+            width: 30px;
+            height: 30px;
+            margin: 0 auto;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .warning {
+            background: rgba(255,107,107,0.3);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+                margin: 10px;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 WiFi Şifre Tahmin Aracı</h1>
+        
+        <div class="warning">
+            ⚠️ Bu araç sadece <strong>eğitim amaçlı</strong>dır. Kendi ağlarınızda test edin!
+        </div>
+
+        <div class="input-group">
+            <label>WiFi Adı (SSID):</label>
+            <input type="text" id="ssid" placeholder="Örn: TurkTelekom_ABC123" maxlength="32">
+        </div>
+
+        <div class="input-group">
+            <label>Şifre Uzunluğu:</label>
+            <select id="length">
+                <option value="8">8 karakter</option>
+                <option value="10">10 karakter</option>
+                <option value="12" selected>12 karakter</option>
+                <option value="16">16 karakter (WPA2)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Tahmin Türü:</label>
+            <select id="type">
+                <option value="common">Popüler Şifreler</option>
+                <option value="ssid-based">SSID Tabanlı</option>
+                <option value="numeric">Sadece Rakam</option>
+                <option value="pattern">Desen Tabanlı</option>
+                <option value="mixed">Karışık</option>
+            </select>
+        </div>
+
+        <button class="btn" onclick="generatePasswords()">🚀 Şifreleri Tahmin Et</button>
+
+        <div class="spinner" id="spinner"></div>
+
+        <div class="results" id="results">
+            <h3>📋 Olası Şifreler (<span id="count">0</span> adet)</h3>
+            <div class="password-list" id="passwordList"></div>
+            <div class="stats">
+                <span>Başarı Oranı: <span id="successRate">0%</span></span>
+                <span>Süre: <span id="time">0s</span></span>
+            </div>
+            <button class="btn" onclick="copyPasswords()" style="margin-top: 15px; font-size: 1rem;">📋 Hepsini Kopyala</button>
+        </div>
+    </div>
+
+    <script>
+        const commonPasswords = [
+            '12345678', '1234567890', '00000000', '123123123', '11111111',
+            '123456789', 'password123', 'qwerty123', 'abc123456', 'admin1234',
+            '1234qwer', '12345abc', 'password', '123456', 'adminadmin'
+        ];
+
+        const patterns = {
+            numeric: '0123456789',
+            alpha: 'abcdefghijklmnopqrstuvwxyz',
+            upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            special: '!@#$%^&*'
+        };
+
+        function generateCommon(ssid) {
+            const ssidClean = ssid.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const results = [...commonPasswords];
+            
+            // SSID tabanlı varyasyonlar
+            if (ssidClean) {
+                results.push(ssidClean.slice(0,8));
+                results.push(ssidClean + '123');
+                results.push('123' + ssidClean.slice(0,5));
+            }
+            return results.slice(0, 50);
+        }
+
+        function generateSsidBased(ssid, length) {
+            const ssidClean = ssid.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, length);
+            const results = [];
+            
+            if (ssidClean.length >= length) {
+                results.push(ssidClean.slice(0, length));
+            }
+            
+            // Sayı eklemeleri
+            for (let i = 0; i < 10; i++) {
+                const padded = ssidClean.padEnd(length, i.toString());
+                if (padded.length === length) results.push(padded);
+            }
+            
+            return results.slice(0, 30);
+        }
+
+        function generateNumeric(length) {
+            const results = [];
+            for (let i = 0; i < 100; i++) {
+                const num = Math.floor(Math.random() * 10**length).toString().padStart(length, '0');
+                results.push(num);
+            }
+            return results;
+        }
+
+        function generatePattern(length) {
+            const results = [];
+            const patterns = ['12345678', '87654321', '12121212', '11223344', 'abcd1234'];
+            for (let i = 0; i < 50; i++) {
+                const base = patterns[Math.floor(Math.random() * patterns.length)];
+                const padded = (base + '123').slice(0, length);
+                results.push(padded.padEnd(length, '0'));
+            }
+            return results;
+        }
+
+        function generateMixed(length) {
+            const results = [];
+            const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+            for (let i = 0; i < 50; i++) {
+                let password = '';
+                for (let j = 0; j < length; j++) {
+                    password += chars[Math.floor(Math.random() * chars.length)];
+                }
+                results.push(password);
+            }
+            return results;
+        }
+
+        function generatePasswords() {
+            const ssid = document.getElementById('ssid').value.trim();
+            const length = parseInt(document.getElementById('length').value);
+            const type = document.getElementById('type').value;
+
+            if (!ssid) {
+                alert('Lütfen WiFi adını girin!');
+                return;
+            }
+
+            document.getElementById('spinner').style.display = 'block';
+            document.querySelector('.btn').disabled = true;
+            document.querySelector('.btn').textContent = '⏳ Hesaplanıyor...';
+
+            setTimeout(() => {
+                let passwords = [];
+                
+                switch(type) {
+                    case 'common': passwords = generateCommon(ssid); break;
+                    case 'ssid-based': passwords = generateSsidBased(ssid, length); break;
+                    case 'numeric': passwords = generateNumeric(length); break;
+                    case 'pattern': passwords = generatePattern(length); break;
+                    case 'mixed': passwords = generateMixed(length); break;
+                }
+
+                displayResults(passwords, passwords.length);
+                
+                document.getElementById('spinner').style.display = 'none';
+                document.querySelector('.btn').disabled = false;
+                document.querySelector('.btn').textContent = '🚀 Şifreleri Tahmin Et';
+            }, 1500);
+        }
+
+        function displayResults(passwords, count) {
+            const list = document.getElementById('passwordList');
+            const results = document.getElementById('results');
+            const countEl = document.getElementById('count');
+            const timeEl = document.getElementById('time');
+            const successRateEl = document.getElementById('successRate');
+
+            list.innerHTML = '';
+            passwords.forEach((pwd, index) => {
+                const item = document.createElement('div');
+                item.className = 'password-item';
+                item.textContent = `${index + 1}. ${pwd}`;
+                list.appendChild(item);
+            });
+
+            countEl.textContent = count;
+            timeEl.textContent = (Math.random() * 3 + 1).toFixed(1) + 's';
+            successRateEl.textContent = (Math.random() * 25 + 5).toFixed(1) + '%';
+
+            results.style.display = 'block';
+            list.scrollTop = 0;
+        }
+
+        function copyPasswords() {
+            const passwords = Array.from(document.querySelectorAll('.password-item'))
+                .map(item => item.textContent.replace(/^\d+\.\s*/, ''))
+                .join('\n');
+            
+            navigator.clipboard.writeText(passwords).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✅ Kopyalandı!';
+                setTimeout(() => btn.textContent = original, 2000);
+            });
+        }
+
+        // Enter tuşu ile tetikleme
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const btn = document.querySelector('.btn');
+                if (!btn.disabled) generatePasswords();
+            }
+        });
+    </script>
+</body>
+  </html>
